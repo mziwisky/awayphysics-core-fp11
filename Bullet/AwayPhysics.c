@@ -144,6 +144,49 @@ void matrix3x3() {
 	AS3_Return(mat);
 }
 
+struct UniqueObjectsCallback : public btCollisionWorld::ContactResultCallback {
+    btAlignedObjectArray<const btCollisionObject*> otherObjs;
+    
+    UniqueObjectsCallback(btCollisionObject* tgtObj) {
+        m_collisionFilterGroup = tgtObj->getBroadphaseHandle()->m_collisionFilterGroup;
+        m_collisionFilterMask = tgtObj->getBroadphaseHandle()->m_collisionFilterMask;
+    }
+    
+    virtual btScalar addSingleResult(btManifoldPoint& cp,
+                                     const btCollisionObjectWrapper* colObj0,int partId0,int index0,
+                                     const btCollisionObjectWrapper* colObj1,int partId1,int index1)
+    {
+        // Some pairs of colliding btCollisionObjects may produce multiple ManifoldPoints, so this may be
+        // called multiple times per pair of CollisionObjects. I only care about unique objects, so reject
+        // duplicates.
+        if (otherObjs.findLinearSearch(colObj0->getCollisionObject()) == otherObjs.size()) {
+            otherObjs.push_back(colObj0->getCollisionObject());
+        }
+        
+        return 0;
+    }
+};
+
+void contactTestInC() __attribute__((used, annotate("as3sig:public function contactTestInC(collisionObj:uint):Vector.<uint>"), annotate("as3package:AWPC_Run")));
+void contactTestInC() {
+    btCollisionObject* object;
+    AS3_GetScalarFromVar(object, collisionObj);
+    UniqueObjectsCallback cb(object);
+    collisionWorld->contactTest(object, cb);
+
+    int numCol = cb.otherObjs.size();
+    if (!numCol) inline_as3("return null;");
+    else {
+        //make an array and return it
+        inline_as3("var hits:Vector.<uint> = new Vector.<uint>();");
+        for (int i=0; i < numCol; i++) {
+            inline_as3("hits.push(%0);" : : "r"(cb.otherObjs[i]));
+        }
+        inline_as3("return hits;");
+    }
+}
+
+
 /// create the discrete dynamics world with btDbvtBroadphase
 void createDiscreteDynamicsWorldWithDbvtInC() __attribute__((used, annotate("as3sig:public function createDiscreteDynamicsWorldWithDbvtInC():uint"), annotate("as3package:AWPC_Run")));
 void createDiscreteDynamicsWorldWithDbvtInC() {

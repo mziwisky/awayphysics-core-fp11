@@ -1,11 +1,12 @@
 package awayphysics.collision.dispatch {
+	import flash.utils.Dictionary;
+	
 	import AWPC_Run.addCollisionObjectInC;
+	import AWPC_Run.contactTestInC;
 	import AWPC_Run.removeCollisionObjectInC;
 	
 	import awayphysics.AWPBase;
 	import awayphysics.collision.dispatch.AWPCollisionObject;
-	
-	import flash.utils.Dictionary;
 		
 	public class AWPCollisionWorld extends AWPBase{
 		
@@ -40,6 +41,21 @@ package awayphysics.collision.dispatch {
 				if (cleanup) {
 					obj.dispose();
 				}
+			}
+		}
+		
+		/**
+		 * Return a Vector of all collisionObjects that are currently contacting the passed in collisionObject.
+		 */
+		public function contactTest(obj:AWPCollisionObject): Vector.<AWPCollisionObject> {
+			var ptrs: Vector.<uint> = contactTestInC(obj.pointer);
+			if (!ptrs) return null;
+			else {
+				var hits: Vector.<AWPCollisionObject> = new Vector.<AWPCollisionObject>(ptrs.length);
+				for (var i:int = 0; i < ptrs.length; i++) {
+					hits[i] = m_collisionObjects[ptrs[i].toString()];
+				}
+				return hits;
 			}
 		}
 	}
